@@ -1,5 +1,7 @@
 # interpolate-sw-plugin
 
+[![NPM version](https://img.shields.io/npm/v/interpolate-sw-plugin.svg?style=flat)](https://npmjs.com/package/interpolate-sw-plugin) [![NPM downloads](https://img.shields.io/npm/dm/interpolate-sw-plugin.svg?style=flat)](https://npmjs.com/package/interpolate-sw-plugin) 
+
 InterpolateSWPlugin is a webpack plugin that will replace, in your own implementation of a service worker, an auto generated cache version string and a list of webpack compiled assets for pre-cache purposes.
 
 Notes:
