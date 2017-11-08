@@ -1,6 +1,6 @@
 {
   "name": "interpolate-sw-plugin",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Interpolate cache version string and webpack asset list into your service worker.",
   "main": "index.js",
   "scripts": {
