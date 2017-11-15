@@ -77,15 +77,11 @@ class InterpolateSWPlugin {
     let assetList = '';
     
     if (compilation && compilation.assets) {
-      // Loop through all assets, adding them to the list.
-      for (let assetName of Object.keys(compilation.assets)) {
-        assetList += ("\"" + assetName + "\",\n");
-      }
 
-      // Remove last new line and comma
-      if (assetList.length > 0) {
-        assetList = assetList.slice(0, -2);
-      }
+      assetList = Object
+        .keys(compilation.assets)
+        .map(asset => '"' + asset + '"')
+        .join(',\n');
 
     }
 
