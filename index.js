@@ -80,6 +80,7 @@ class InterpolateSWPlugin {
 
       assetList = Object
         .keys(compilation.assets)
+        .filter(asset => asset !== this.options.to)
         .map(asset => '"' + asset + '"')
         .join(',\n');
 
