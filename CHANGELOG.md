@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="2.1.0"></a>
+# [2.1.0](https://github.com/manu-garcia/interpolate-sw-plugin/compare/v2.0.4...v2.1.0) (2017-12-09)
+
+
+### Features
+
+* Service Worker deactivation feature while developing ([0eb6faa](https://github.com/manu-garcia/interpolate-sw-plugin/commit/0eb6faa))
+
+
+
 <a name="2.0.4">versioning: Automatic versioning and CHANGELOG generation</a>
 ## [2.0.4](https://github.com/manu-garcia/interpolate-sw-plugin/compare/v2.0.3...v2.0.4) (2017-12-02)
 
@@ -17,5 +27,3 @@ All notable changes to this project will be documented in this file. See [standa
 # Change Log
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
-
-
