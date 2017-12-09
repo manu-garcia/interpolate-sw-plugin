@@ -42,6 +42,9 @@ module.exports = {
       replaceCacheVersion: true | false,
       // Activate or deactivate replacement of the files variable %SW_ASSET_FILES%
       replaceAssetFiles: true | false,
+      // This config will replace your own Service Worker with a dummy one (if true),
+      // effectively deactivates all service worker functionalities.
+      deactivateSW: true | false,
     }),
   ]
 }

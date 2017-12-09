@@ -1,6 +1,7 @@
 'use strict'
 
 const fs = require('fs');
+const path = require('path');
 
 /**
  * InterpolateSWPlugin is a webpack plugin that will replace in your own service worker the following variables:
@@ -35,6 +36,9 @@ const fs = require('fs');
  *        replaceCacheVersion: true | false,
  *        // Activate or deactivate replacement of the files variable %SW_ASSET_FILES%
  *        replaceAssetFiles: true | false,
+ *        // This config will replace your own Service Worker with a dummy one (if true)
+ *        // effectively deactivates all service worker functionalities.
+ *        deactivateSW: true,
  *      }),
  *    ]
  *  };
@@ -47,20 +51,23 @@ class InterpolateSWPlugin {
       to: '',
       replaceCacheVersion: false,
       replaceAssetFiles: false,
+      deactivateSW: false,
     };
 
     this.options = Object.assign(defaults, options);
+
+    this.DEACTIVATE_SW_FILE = path.resolve(__dirname, './src/deactivatesw.js');
 
   }
 
   /**
    * Verifies we have all necesary configuration
    */
-  _validOptions() {
+  _validOptions(options) {
 
-    if (!this.options || 
-        !this.options.from || !this.options.from.length ||
-        !this.options.to   || !this.options.to.length) {
+    if (!options || 
+        !options.from || !options.from.length ||
+        !options.to   || !options.to.length) {
           return false;
         }
 
@@ -70,9 +77,10 @@ class InterpolateSWPlugin {
   /**
    * Gets a comma-separated list of compiled assets by webpack.
    * 
-   * @param {*} compilation: currentwebpack compilation object.
+   * @param {object} compilation: currentwebpack compilation object.
+   * @param {object} options: internal options object provided by this.applyOptions().
    */
-  _getCommaSeparatedAssetList (compilation) {
+  _getCommaSeparatedAssetList (compilation, options) {
 
     let assetList = '';
     
@@ -80,7 +88,7 @@ class InterpolateSWPlugin {
 
       assetList = Object
         .keys(compilation.assets)
-        .filter(asset => asset !== this.options.to)
+        .filter(asset => asset !== options.to)
         .map(asset => '"' + asset + '"')
         .join(',\n');
 
@@ -93,36 +101,37 @@ class InterpolateSWPlugin {
   /**
    * Make interpolations to the service worker, and copy it from origin to destination.
    * 
-   * @param {*} compilation: Webpack compilation object provided by webpack compiler.
-   * @param {*} callback: Webpack callbat to be called once task is finished. Provided by webpack plugin event.
+   * @param {object} compilation: Webpack compilation object provided by webpack compiler.
+   * @param {object} options: internal options object provided by this.applyOptions().
+   * @param {fn} callback: Webpack callbak to be called once task is finished. Provided by webpack plugin event.
    */
-  _interpolateSW (compilation, callback) {
+  _interpolateSW (compilation, options, callback) {
     
     // If we do not have all necesary configuration we exit
-    if (!this._validOptions()) {
+    if (!this._validOptions(options)) {
       console.log('InterpolateSWPlugin error: invalid options in: ', options);
       callback();
       return;
     }
-    
-    fs.readFile(this.options.from, 'utf8', (error, fileContent) => {
+
+    fs.readFile(options.from, 'utf8', (error, fileContent) => {
       
       if (error) {
-        console.log('InterpolateSWPlugin error: from file not found (' + this.options.from + '). Make sure it is a full path and not a relative path.');
+        console.log('InterpolateSWPlugin error: from file not found (' + options.from + '). Make sure it is a full path and not a relative path.');
         callbak();
         return;
       }
 
-      if (this.options.replaceAssetFiles) {
-        fileContent = fileContent.replace(/"%SW_ASSET_FILES%"/gi, this._getCommaSeparatedAssetList (compilation));
+      if (options.replaceAssetFiles === true) {
+        fileContent = fileContent.replace(/"%SW_ASSET_FILES%"/gi, this._getCommaSeparatedAssetList (compilation, options));
       }
 
-      if (this.options.replaceCacheVersion) {
+      if (options.replaceCacheVersion === true) {
         fileContent = fileContent.replace(/"%SW_CACHE_VERSION%"/gi, new Date().getTime());
       }
-      
+
       // Insert this destination file into the Webpack build as a new file asset
-      compilation.assets[this.options.to] = {
+      compilation.assets[options.to] = {
         source: function() {
           return fileContent;
         },
@@ -137,6 +146,34 @@ class InterpolateSWPlugin {
   }
 
   /**
+   * Apply options will alter the configuration based on the feature-like options in the configuration
+   * 
+   * For example, if user deactivates SW, configuration will also alter in here to avoid reaplcing anything
+   * 
+   */
+  applyOptions () {
+
+    // Prevent the modification of the original options.
+    let options = Object.assign({}, this.options);
+
+    // If user wants to deactivate the SW for convenient dev purposes, replace the sw
+    // with a dummy one, so that we can replace a potential-existing previous sw.
+    if (options.deactivateSW === true) {
+
+      // Replace SW with a dummy one
+      options.from = this.DEACTIVATE_SW_FILE;
+
+      // No need for replacing anything on the dummy SW
+      options.replaceAssetFiles = false;
+      options.replaceCacheVersion = false;
+
+    }
+
+    return options;
+    
+  }
+
+  /**
    * Apply will be called by webpack, so we can gain access to the compiler and all the events
    * 
    * @param {*} compiler : Current webpack compiler. This will be passed by webpack
@@ -144,15 +181,21 @@ class InterpolateSWPlugin {
    */
   apply(compiler) {
 
-    let options = this.options;
+    let options = this.applyOptions();
     let _interpolateSW = this._interpolateSW.bind(this);
 
     compiler.plugin("after-compile", (compilation, callback) => {
 
-      // Add the service worker template to dependecies. Now this file is being watched.
-      compilation.fileDependencies.push(options.from);
+      // Avoid watching the original SW when deactivated
+      if (options.deactivateSW === false) {
+      
+        // Add the service worker template to dependecies. Now this file is being watched.
+        compilation.fileDependencies.push(options.from);
 
-      _interpolateSW (compilation, callback);
+      }
+
+      _interpolateSW (compilation, options, callback);
+
     });
 
   }
